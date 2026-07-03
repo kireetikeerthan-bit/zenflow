@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "io.github.kireetikeerthan_bit.twa",
+    "sha256_cert_fingerprints": ["51:61:7A:03:4D:41:CD:F8:26:44:47:1F:8B:12:2D:A8:0F:EE:41:67:A7:BC:99:E6:BA:C8:44:D8:91:98:B7:49"]
+  }
+}]
