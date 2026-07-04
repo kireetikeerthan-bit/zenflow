@@ -2,7 +2,7 @@
   "relation": ["delegate_permission/common.handle_all_urls"],
   "target": {
     "namespace": "android_app",
-    "package_name": "io.github.kireetikeerthan_bit.twa",
-    "sha256_cert_fingerprints": ["D7:C7:F8:88:90:2E:EC:E2:51:A0:53:54:3A:A1:6B:DE:B6:A9:18:58:CC:3E:D6:C7:D1:B9:22:2B:86:2F:EB:16"]
+    "package_name": "app.netlify.zenflow_shaolin.twa",
+    "sha256_cert_fingerprints": ["E8:64:2F:6A:E8:33:C8:38:F5:D0:EC:C1:0C:BF:9E:84:A2:19:C4:81:CA:9B:87:82:8C:69:BB:FB:76:20:28:2E"]
   }
 }]
