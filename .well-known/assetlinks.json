@@ -3,6 +3,6 @@
   "target": {
     "namespace": "android_app",
     "package_name": "io.github.kireetikeerthan_bit.twa",
-    "sha256_cert_fingerprints": ["51:61:7A:03:4D:41:CD:F8:26:44:47:1F:8B:12:2D:A8:0F:EE:41:67:A7:BC:99:E6:BA:C8:44:D8:91:98:B7:49"]
+    "sha256_cert_fingerprints": ["D7:C7:F8:88:90:2E:EC:E2:51:A0:53:54:3A:A1:6B:DE:B6:A9:18:58:CC:3E:D6:C7:D1:B9:22:2B:86:2F:EB:16"]
   }
 }]
