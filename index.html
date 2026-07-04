@@ -1229,106 +1229,148 @@ function speak(text,onEnd){
   setVUI(true);
   const u=new SpeechSynthesisUtterance(text);
   u.rate=voiceRate;u.pitch=0.60;u.volume=1;
-  function go(){
-    const v=window.speechSynthesis.getVoices();
 
-    // ── Detect platform ──
+  function pickBestVoice(voices){
     const isAndroid=/Android/i.test(navigator.userAgent);
     const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    // ── Android: pick deepest available English male voice ──
-    // Priority order tuned specifically for Android TTS engines
-    const androidPref=[
-      'Google UK English Male',
-      'Google US English Male',
-      'en-gb-x-gbd-local',      // deep GB male offline voice
-      'en-gb-x-gbg-local',      // GB male variant
-      'en-gb-x-gbd-network',
-      'en-us-x-sfg-local',      // US male local
-      'en-us-x-sfg-network',
-      'en-IN-x-end-local',      // Indian English male (deep)
-      'en-in-x-end-local',
-      'Google Hindi Male',       // fallback deep voice
-    ];
+    // Log all available voices for debugging
+    console.log('[ZenFlow] Available voices:');
+    voices.forEach((v,i)=>console.log(` ${i}: ${v.name} | ${v.lang} | ${v.localService?'local':'network'}`));
 
-    // ── PC: prefer British/authoritative voices ──
-    const pcPref=[
-      'Daniel',                  // macOS/iOS deep British
-      'Alex',                    // macOS authoritative
-      'Google UK English Male',
-      'Microsoft David',
-      'Microsoft George',        // British male
-      'Microsoft Stefan',        // deep German-accent English
-      'Arthur',
-      'Rishi',
-      'Fred',
-      'Bruce',
-    ];
+    let selected=null;
 
-    // ── iOS: specific voices ──
-    const iosPref=[
-      'Daniel',
-      'Arthur',
-      'Rishi',
-      'Gordon',
-      'Oliver',
-    ];
-
-    const prefList = isAndroid ? androidPref : isIOS ? iosPref : pcPref;
-
-    let selectedVoice = null;
-
-    // Try exact name matches first
-    for(const p of prefList){
-      const found=v.find(x=>
-        x.name.toLowerCase().includes(p.toLowerCase()) ||
-        x.voiceURI.toLowerCase().includes(p.toLowerCase())
-      );
-      if(found){selectedVoice=found;break;}
-    }
-
-    // If no preferred voice found, find any English male voice
-    if(!selectedVoice){
-      // Try to find any male English voice
-      selectedVoice = v.find(x=>
-        x.lang.startsWith('en') &&
-        (x.name.toLowerCase().includes('male') ||
-         x.name.toLowerCase().includes('man') ||
-         x.name.toLowerCase().includes('guy'))
-      );
-    }
-
-    // Try any English voice as last resort
-    if(!selectedVoice){
-      selectedVoice = v.find(x => x.lang.startsWith('en'));
-    }
-
-    if(selectedVoice){
-      u.voice = selectedVoice;
-      // Adjust pitch slightly based on voice type for consistency
-      if(selectedVoice.name.includes('UK') || selectedVoice.name.includes('gb')){
-        u.pitch = 0.58; // slightly deeper for British voices
+    if(isAndroid){
+      // ── ANDROID STRATEGY ──
+      // Step 1: Try known deep male voice URIs (most reliable on Android)
+      const maleURIs=[
+        'en-gb-x-gbd-local',   // Google UK Male local — deepest
+        'en-gb-x-gbg-local',   // Google UK Male variant
+        'en-gb-x-rjs-local',   // Google UK Male variant 2
+        'en-gb-x-gbd-network', // Google UK Male network
+        'en-gb-x-gbg-network',
+        'en-us-x-sfg-local',   // Google US Male local
+        'en-us-x-iom-local',   // Google US Male variant
+        'en-us-x-sfg-network',
+        'en-in-x-end-local',   // Indian English Male
+        'en-in-x-ene-local',
+      ];
+      for(const uri of maleURIs){
+        const v=voices.find(x=>
+          x.voiceURI.toLowerCase()===uri.toLowerCase()||
+          x.name.toLowerCase()===uri.toLowerCase()
+        );
+        if(v){selected=v;console.log('[ZenFlow] Android URI match:',v.name);break;}
       }
-      console.log('[ZenFlow Voice] Using:', selectedVoice.name, selectedVoice.lang);
+
+      // Step 2: Try name-based search for male voices
+      if(!selected){
+        const maleNames=[
+          'Google UK English Male',
+          'Google US English Male',
+          'Google British Male',
+          'UK English Male',
+          'British Male',
+          'Male',
+        ];
+        for(const name of maleNames){
+          const v=voices.find(x=>x.name.toLowerCase().includes(name.toLowerCase()));
+          if(v){selected=v;console.log('[ZenFlow] Android name match:',v.name);break;}
+        }
+      }
+
+      // Step 3: Find any en-GB voice that is local (offline)
+      if(!selected){
+        selected=voices.find(x=>x.lang==='en-GB'&&x.localService);
+        if(selected)console.log('[ZenFlow] Android en-GB local:',selected.name);
+      }
+
+      // Step 4: Find any en-GB voice
+      if(!selected){
+        selected=voices.find(x=>x.lang==='en-GB');
+        if(selected)console.log('[ZenFlow] Android en-GB:',selected.name);
+      }
+
+      // Step 5: Find any en-US local voice
+      if(!selected){
+        selected=voices.find(x=>x.lang==='en-US'&&x.localService);
+        if(selected)console.log('[ZenFlow] Android en-US local:',selected.name);
+      }
+
+      // Step 6: Any English voice that is NOT female
+      if(!selected){
+        selected=voices.find(x=>
+          x.lang.startsWith('en')&&
+          !x.name.toLowerCase().includes('female')&&
+          !x.name.toLowerCase().includes('woman')&&
+          !x.name.toLowerCase().includes('girl')
+        );
+        if(selected)console.log('[ZenFlow] Android non-female English:',selected.name);
+      }
+
+    } else if(isIOS){
+      // ── iOS STRATEGY ──
+      const iosPref=['Daniel','Arthur','Rishi','Gordon','Oliver','Aaron'];
+      for(const p of iosPref){
+        const v=voices.find(x=>x.name.includes(p));
+        if(v){selected=v;break;}
+      }
+
+    } else {
+      // ── PC STRATEGY ──
+      const pcPref=[
+        'Daniel','Alex','Google UK English Male',
+        'Microsoft George','Microsoft David',
+        'Arthur','Rishi','Fred','Bruce',
+      ];
+      for(const p of pcPref){
+        const v=voices.find(x=>x.name.includes(p));
+        if(v){selected=v;break;}
+      }
+    }
+
+    // Final fallback — any English voice
+    if(!selected){
+      selected=voices.find(x=>x.lang.startsWith('en'));
+      if(selected)console.log('[ZenFlow] Fallback English voice:',selected.name);
+    }
+
+    return selected;
+  }
+
+  function go(){
+    const voices=window.speechSynthesis.getVoices();
+    const selected=pickBestVoice(voices);
+
+    if(selected){
+      u.voice=selected;
+      // Make GB voices slightly deeper
+      if(selected.lang==='en-GB'||selected.name.includes('UK')||selected.name.includes('British')){
+        u.pitch=0.55;
+      }
+      console.log('[ZenFlow Voice] FINAL SELECTION:',selected.name,'|',selected.lang,'| local:',selected.localService);
+    } else {
+      console.warn('[ZenFlow Voice] No suitable voice found — using system default');
     }
 
     u.onend=()=>{setVUI(false);if(onEnd)onEnd();};
-    u.onerror=(e)=>{
-      console.warn('[ZenFlow Voice] Error:', e);
-      setVUI(false);
-    };
+    u.onerror=(e)=>{console.warn('[ZenFlow Voice] Error:',e.error);setVUI(false);};
     window.speechSynthesis.speak(u);
   }
 
-  // Give voices time to load on Android (Android TTS loads slower)
-  if(window.speechSynthesis.getVoices().length>0){
+  // Android TTS loads voices slowly — wait for them
+  const voices=window.speechSynthesis.getVoices();
+  if(voices.length>0){
     go();
   } else {
-    window.speechSynthesis.onvoiceschanged=go;
-    // Android sometimes needs a nudge
+    window.speechSynthesis.onvoiceschanged=()=>{
+      window.speechSynthesis.onvoiceschanged=null;
+      go();
+    };
+    // Double safety for Android
     setTimeout(()=>{
-      if(window.speechSynthesis.getVoices().length>0)go();
-    },500);
+      if(window.speechSynthesis.getVoices().length>0&&!u.voice)go();
+    },800);
   }
 }
 function setVUI(sp){
