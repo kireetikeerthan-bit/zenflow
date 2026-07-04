@@ -2,11 +2,11 @@ const CACHE_NAME = 'zenflow-v6';
 const CACHE_VERSION = '6.1.0';
 
 const APP_SHELL = [
-  '/zenflow/',
-  '/zenflow/index.html',
-  '/zenflow/manifest.json',
-  '/zenflow/icons/icon-192.png',
-  '/zenflow/icons/icon-512.png',
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap',
   'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js'
