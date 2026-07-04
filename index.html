@@ -2,14 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<link rel="manifest" href="manifest.json"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="ZenFlow"/>
-<link rel="apple-touch-icon" href="icons/icon-192.png"/>
-<meta name="msapplication-TileImage" content="icons/icon-144.png"/>
-<meta name="msapplication-TileColor" content="#060810"/>
-<meta name="theme-color" content="#C9962A"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
 <title>ZenFlow v6 — Shaolin Discipline</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -1225,17 +1217,108 @@ function speak(text,onEnd){
   window.speechSynthesis.cancel();
   setVUI(true);
   const u=new SpeechSynthesisUtterance(text);
-  u.rate=voiceRate;u.pitch=0.62;u.volume=1;
+  u.rate=voiceRate;u.pitch=0.60;u.volume=1;
   function go(){
     const v=window.speechSynthesis.getVoices();
-    const pref=['Daniel','Alex','Google UK English Male','Microsoft David','Arthur','Rishi','Fred','Bruce'];
-    for(const p of pref){const found=v.find(x=>x.name.includes(p)||x.lang===p);if(found){u.voice=found;break;}}
+
+    // ── Detect platform ──
+    const isAndroid=/Android/i.test(navigator.userAgent);
+    const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // ── Android: pick deepest available English male voice ──
+    // Priority order tuned specifically for Android TTS engines
+    const androidPref=[
+      'Google UK English Male',
+      'Google US English Male',
+      'en-gb-x-gbd-local',      // deep GB male offline voice
+      'en-gb-x-gbg-local',      // GB male variant
+      'en-gb-x-gbd-network',
+      'en-us-x-sfg-local',      // US male local
+      'en-us-x-sfg-network',
+      'en-IN-x-end-local',      // Indian English male (deep)
+      'en-in-x-end-local',
+      'Google Hindi Male',       // fallback deep voice
+    ];
+
+    // ── PC: prefer British/authoritative voices ──
+    const pcPref=[
+      'Daniel',                  // macOS/iOS deep British
+      'Alex',                    // macOS authoritative
+      'Google UK English Male',
+      'Microsoft David',
+      'Microsoft George',        // British male
+      'Microsoft Stefan',        // deep German-accent English
+      'Arthur',
+      'Rishi',
+      'Fred',
+      'Bruce',
+    ];
+
+    // ── iOS: specific voices ──
+    const iosPref=[
+      'Daniel',
+      'Arthur',
+      'Rishi',
+      'Gordon',
+      'Oliver',
+    ];
+
+    const prefList = isAndroid ? androidPref : isIOS ? iosPref : pcPref;
+
+    let selectedVoice = null;
+
+    // Try exact name matches first
+    for(const p of prefList){
+      const found=v.find(x=>
+        x.name.toLowerCase().includes(p.toLowerCase()) ||
+        x.voiceURI.toLowerCase().includes(p.toLowerCase())
+      );
+      if(found){selectedVoice=found;break;}
+    }
+
+    // If no preferred voice found, find any English male voice
+    if(!selectedVoice){
+      // Try to find any male English voice
+      selectedVoice = v.find(x=>
+        x.lang.startsWith('en') &&
+        (x.name.toLowerCase().includes('male') ||
+         x.name.toLowerCase().includes('man') ||
+         x.name.toLowerCase().includes('guy'))
+      );
+    }
+
+    // Try any English voice as last resort
+    if(!selectedVoice){
+      selectedVoice = v.find(x => x.lang.startsWith('en'));
+    }
+
+    if(selectedVoice){
+      u.voice = selectedVoice;
+      // Adjust pitch slightly based on voice type for consistency
+      if(selectedVoice.name.includes('UK') || selectedVoice.name.includes('gb')){
+        u.pitch = 0.58; // slightly deeper for British voices
+      }
+      console.log('[ZenFlow Voice] Using:', selectedVoice.name, selectedVoice.lang);
+    }
+
     u.onend=()=>{setVUI(false);if(onEnd)onEnd();};
-    u.onerror=()=>setVUI(false);
+    u.onerror=(e)=>{
+      console.warn('[ZenFlow Voice] Error:', e);
+      setVUI(false);
+    };
     window.speechSynthesis.speak(u);
   }
-  if(window.speechSynthesis.getVoices().length>0)go();
-  else window.speechSynthesis.onvoiceschanged=go;
+
+  // Give voices time to load on Android (Android TTS loads slower)
+  if(window.speechSynthesis.getVoices().length>0){
+    go();
+  } else {
+    window.speechSynthesis.onvoiceschanged=go;
+    // Android sometimes needs a nudge
+    setTimeout(()=>{
+      if(window.speechSynthesis.getVoices().length>0)go();
+    },500);
+  }
 }
 function setVUI(sp){
   const dot=document.getElementById('vdot'),txt=document.getElementById('vtxt'),btn=document.getElementById('vbtnEl');
@@ -1431,28 +1514,5 @@ setInterval(pruneExpired,5*60*1000);
 if(window.speechSynthesis)window.speechSynthesis.getVoices();
 ld();loadSettings();setQOTD();renderDiscCard();rTasks();
 </script>
-
-<script>
-// ── SERVICE WORKER REGISTRATION ──
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/zenflow/sw.js', { scope: '/zenflow/' })
-      .then(reg => {
-        console.log('[ZenFlow] Service Worker registered:', reg.scope);
-        // Check for updates every time the app loads
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('[ZenFlow] New version available — will update on next launch');
-            }
-          });
-        });
-      })
-      .catch(err => console.warn('[ZenFlow] SW registration failed:', err));
-  });
-}
-</script>
-
 </body>
 </html>
