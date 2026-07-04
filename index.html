@@ -2,6 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#C9962A"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="ZenFlow"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png"/>
+<meta name="msapplication-TileImage" content="icons/icon-144.png"/>
+<meta name="msapplication-TileColor" content="#060810"/>
+<meta name="application-name" content="ZenFlow"/>
+<meta name="description" content="Track physical, mental and spiritual tasks with Shaolin discipline, voice review, ambient music and lifetime progress analysis."/>
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
 <title>ZenFlow v6 — Shaolin Discipline</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -1513,6 +1524,27 @@ setInterval(pruneExpired,5*60*1000);
 
 if(window.speechSynthesis)window.speechSynthesis.getVoices();
 ld();loadSettings();setQOTD();renderDiscCard();rTasks();
+</script>
+
+<script>
+// ── SERVICE WORKER REGISTRATION ──
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js',{scope:'/'})
+      .then(reg=>{
+        console.log('[ZenFlow] SW registered:',reg.scope);
+        reg.addEventListener('updatefound',()=>{
+          const nw=reg.installing;
+          nw.addEventListener('statechange',()=>{
+            if(nw.state==='installed'&&navigator.serviceWorker.controller){
+              console.log('[ZenFlow] New version available');
+            }
+          });
+        });
+      })
+      .catch(err=>console.warn('[ZenFlow] SW failed:',err));
+  });
+}
 </script>
 </body>
 </html>
